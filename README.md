@@ -1,5 +1,5 @@
 # insurance_claim
-State diagram, state data and transition function description with chain code for insurance claim process
+State diagram, state data and transition function description with chain code for insurance claim in a Canadian insurance company
 
 
 ## State Diagram
