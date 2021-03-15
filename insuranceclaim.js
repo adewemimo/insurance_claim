@@ -16,7 +16,7 @@ class InsuranceClaim extends Contract {
     async initLedger(ctx) {
         console.info('============= START : Initialize Ledger ===========');
         const claims = [
-            {
+            /**{
                 state: newState,
                 claimID = "",
                 claimerName: "",
@@ -55,6 +55,7 @@ class InsuranceClaim extends Contract {
             investigatingOfficer: {
                 officerName: "",
                 badgeNumber: "",
+                officerReport: ""
             },
             atFault: false,
             adjusterName: "",
@@ -62,15 +63,10 @@ class InsuranceClaim extends Contract {
             rejectClaimDecision: "", 
             deductible:0,
 
-            },
+            }, **/
         
         ];
 
-        for (let i = 0; i < claims.length; i++) {
-            claims[i].docType = 'claim';
-            await ctx.stub.putState('CLAIM' + i, Buffer.from(JSON.stringify(claims[i])));
-            console.info('Added <--> ', claims[i]);
-        }
         console.info('============= END : Initialize Ledger ===========');
     }
    
@@ -114,7 +110,6 @@ class InsuranceClaim extends Contract {
             deductible:0,
         };
 
-        await ctx.stub.putState(recClaimID, Buffer.from(JSON.stringify(claim)));
         console.info('============= END : File Report ===========');
     }
 
@@ -163,15 +158,33 @@ class InsuranceClaim extends Contract {
         }
         const claim = JSON.parse(claimAsBytes.toString());
 
-        claim.state = this.newState;
-        claim.amountOfLoss = amountOfLoss;
-        claim.accidentDetails.photoEvidence = photoEvidence;
-        claim.accidentDetails.receiptEvidence = receiptEvidence;
+        if (claim.adjusterName.length !== 0){
+            claim.state = this.newState;
+            claim.amountOfLoss = amountOfLoss;
+            claim.accidentDetails.photoEvidence = photoEvidence;
+            claim.accidentDetails.receiptEvidence = receiptEvidence;
+        }
 
+       
         await ctx.stub.putState(claimID, Buffer.from(JSON.stringify(claim)));
         console.info('============= END : Submit Proof of Loss Form   ===========');
 
     }
+
+    async addPoliceRecord(ctx, claimID, policeRecord) {
+    
+        console.info('addPoliceRecord Started');
+        const claimAsBytes = await ctx.stub.getState(claimID); // get the claim from chaincode state
+        if (!claimAsBytes || claimAsBytes.length === 0) {
+            throw new Error(`${policyNumber } does not exist`);
+        }
+        const claim = JSON.parse(claimAsBytes.toString());
+        claim.investigatingOfficer.officerReport = policeRecord;
+        
+        await ctx.stub.putState(claimID, Buffer.from(JSON.stringify(claim)));
+        console.info('addPoliceRecord Completed');
+       }
+
 
     async determineFault(ctx, claimID, faultDecision) {
         console.info('============= START : Determine Fault ===========');
@@ -298,6 +311,50 @@ class InsuranceClaim extends Contract {
         console.info('============= END :  Deductible for Insurer to pay after found at Fault ===========');
 
     }
+
+    async retrieveClaim(ctx, claimID) {
+
+        console.info('retrieveClaim started');
+        const claimAsBytes = await ctx.stub.getState(claimID); // get the claim from chaincode state
+        if (!claimAsBytes || claimAsBytes.length === 0) {
+            throw new Error(`${policyNumber} does not exist`);
+        }
+       
+        const claim = JSON.parse(claimAsBytes.toString());
+        console.log(claim);
+        console.info('retrieveClaim completed');
+        return claim;
+      
+    }
+       
+    async retrieveAllClaims(ctx) {
+
+        console.info('retrieveAllClaim started');
+        const startKey = '';
+        const endKey = '';
+        const allResults = [];
+
+        for await (const {key, value} of ctx.stub.getStateByRange(startKey, endKey)) {
+            const strValue = Buffer.from(value).toString('utf8');
+            let record;
+            try {
+                record = JSON.parse(strValue);
+            } catch (err) {
+                console.log(err);
+                record = strValue;
+            }
+            allResults.push({ Key: key, Record: record });
+        }
+
+        console.info(allResults);
+        console.info('retrieveAllClaim completed');
+        return JSON.stringify(allResults);
+      
+       }
+       
+
+      
+      
 
 }
 
