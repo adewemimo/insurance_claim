@@ -109,8 +109,10 @@ class InsuranceClaim extends Contract {
             claimPaid: 0, 
             deductible:0,
         };
+        await ctx.stub.putState(recClaimID, Buffer.from(JSON.stringify(claim)));
 
         console.info('============= END : File Report ===========');
+        return (`ClaimID for this report: ${recClaimID}`)
     }
 
     async addOtherDrivers(ctx, claimID, driverName, driverLicenceNumber, driverInsurer, DriverInsurancePolicyNumber ){
